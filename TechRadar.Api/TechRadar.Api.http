@@ -1,0 +1,5 @@
+@TechRadar.Api_HostAddress = http://localhost:5215
+
+GET {{TechRadar.Api_HostAddress}}/health
+
+###
