@@ -6,8 +6,10 @@ using TechRadar.Core.Options;
 namespace TechRadar.Core.Fetchers;
 
 // The HttpClient is handed in through DI ("constructor injection").
-public class RssFetcher(HttpClient http)
+public class RssFetcher(HttpClient http) : INewsSource
 {
+    public string Type => "rss";
+
     public async Task<List<NewsItem>> FetchAsync(NewsSourceConfig source, CancellationToken ct = default)
     {
         var xml = await http.GetStringAsync(source.Url, ct);

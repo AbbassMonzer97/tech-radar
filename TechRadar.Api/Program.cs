@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using TechRadar.Core.Fetchers;
 using TechRadar.Core.Options;
+using TechRadar.Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +13,15 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<SourcesOptions>(
     builder.Configuration.GetSection(SourcesOptions.SectionName));
 
-// Register RssFetcher and give it a ready-made HttpClient.
+// Register each fetcher with its own ready-made HttpClient,
+// then also register it as an INewsSource so NewsCollector gets all of them.
 builder.Services.AddHttpClient<RssFetcher>();
+builder.Services.AddHttpClient<HackerNewsFetcher>();
+builder.Services.AddHttpClient<GitHubFetcher>();
+builder.Services.AddTransient<INewsSource>(sp => sp.GetRequiredService<RssFetcher>());
+builder.Services.AddTransient<INewsSource>(sp => sp.GetRequiredService<HackerNewsFetcher>());
+builder.Services.AddTransient<INewsSource>(sp => sp.GetRequiredService<GitHubFetcher>());
+builder.Services.AddTransient<NewsCollector>();
 
 var app = builder.Build();
 
@@ -29,13 +37,8 @@ app.MapGet("/health", () => "ok")
 app.MapGet("/sources", (IOptions<SourcesOptions> options) => options.Value.Items)
     .WithName("GetSources");
 
-// Fetch all RSS feeds at the same time and merge them, newest first.
-app.MapGet("/items", async (RssFetcher rss, IOptions<SourcesOptions> options, CancellationToken ct) =>
-{
-    var feeds = options.Value.Items.Where(s => s.Type == "rss");
-    var results = await Task.WhenAll(feeds.Select(s => rss.FetchAsync(s, ct)));
-    return results.SelectMany(items => items).OrderByDescending(i => i.PublishedAt);
-})
-.WithName("GetItems");
+// Fetch every source at the same time and merge them, newest first.
+app.MapGet("/items", (NewsCollector collector, CancellationToken ct) => collector.CollectAsync(ct))
+    .WithName("GetItems");
 
 app.Run();
