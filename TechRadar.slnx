@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TechRadar.Api/TechRadar.Api.csproj" />
+  <Project Path="TechRadar.Core/TechRadar.Core.csproj" />
+</Solution>
