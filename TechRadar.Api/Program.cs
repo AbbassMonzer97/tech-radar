@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using TechRadar.Api.Jobs;
 using TechRadar.Core.Fetchers;
 using TechRadar.Core.Options;
 using TechRadar.Core.Services;
@@ -22,6 +23,9 @@ builder.Services.AddTransient<INewsSource>(sp => sp.GetRequiredService<RssFetche
 builder.Services.AddTransient<INewsSource>(sp => sp.GetRequiredService<HackerNewsFetcher>());
 builder.Services.AddTransient<INewsSource>(sp => sp.GetRequiredService<GitHubFetcher>());
 builder.Services.AddTransient<NewsCollector>();
+
+// Fetch on startup and every 6 hours in the background.
+builder.Services.AddHostedService<FetchJob>();
 
 var app = builder.Build();
 
